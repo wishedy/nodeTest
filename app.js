@@ -1,14 +1,51 @@
 var express = require('express');
 var bodyParser = require('body-parser');
+var session = require('express-session');
+var cookieParser = require('cookie-parser');
+import router from './routes/index.js';
 var mongoose = require('mongoose');
 var app = express();
+app.all('*', (req, res, next) => {
+    res.header("Access-Control-Allow-Origin", req.headers.Origin || req.headers.origin || 'https://cangdu.org');
+    res.header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With");
+    res.header("Access-Control-Allow-Methods", "PUT,POST,GET,DELETE,OPTIONS");
+    res.header("Access-Control-Allow-Credentials", true); //可以带cookies
+    res.header("X-Powered-By", '3.2.1')
+    if (req.method == 'OPTIONS') {
+        res.sendStatus(200);
+    } else {
+        next();
+    }
+});
 var User = require('./models/UserList');
 app.use(bodyParser.urlencoded({extended: false}));
 app.use(bodyParser.json());
+app.use(cookieParser('sessiontest'));
+app.use(session({
+    secret: 'sessiontest',//与cookieParser中的一致
+    resave: true,
+    saveUninitialized:true
+}));
 app.get('/',function(req,res){
-   res.send('Hello World');
+    if(req.session.user){
+        var user=req.session.user;
+        var name=user.name;
+        res.send('你好'+name+'，欢迎来到我的家园。');
+    }else{
+        var user={
+            name:"Chen-xy",
+            age:"22",
+            address:"bj"
+        }
+        req.session.user=user;
+        res.send('你好'+user.name+'，欢迎登录页面。');
+    }
 });
-mongoose.connect('mongodb://localhost:27017/userList',function(err){
+/*app.get('/',function(req,res){
+   res.send('Hello World');
+});*/
+router(app);
+/*mongoose.connect('mongodb://localhost:27017/userList',function(err){
 if(err){
     console.log('数据库连接失败');
 }else{
@@ -83,4 +120,9 @@ if(err){
         console.log('Example app listening at http://%s:%s', host, port);
     });
 }
+});*/
+var server = app.listen(3000,function(){
+    var host = server.address().address;
+    var port = server.address().port;
+    console.log('Example app listening at http://%s:%s', host, port);
 });
